@@ -39,6 +39,9 @@
 
 - include: elasticsearch-templates.yml
   when: es_templates
+  notify:
+    - restart elasticsearch
+    - reload systemd configuration
   tags:
       - templates
 
