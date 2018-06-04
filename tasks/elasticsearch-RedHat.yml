@@ -5,7 +5,7 @@
 
 - name: RedHat - add Elasticsearch repo
   template: src=elasticsearch.repo dest=/etc/yum.repos.d/elasticsearch-{{ es_major_version }}.repo
-  when: es_use_repository
+  when: es_use_repository and deployment_environment_id not in ['staging', 'production']
 
 - name: RedHat - include versionlock
   include: elasticsearch-RedHat-version-lock.yml
@@ -19,7 +19,7 @@
   retries: 5
   delay: 10
 
-- name: RedHat - Install Elasticsearch from url
-  yum: name={% if es_custom_package_url is defined %}{{ es_custom_package_url }}{% else %}{{ es_package_url }}-{{ es_version }}.noarch.rpm{% endif %} state=present
-  when: not es_use_repository
-  register: elasticsearch_install_from_package
+# - name: RedHat - Install Elasticsearch from url
+#   yum: name={% if es_custom_package_url is defined %}{{ es_custom_package_url }}{% else %}{{ es_package_url }}-{{ es_version }}.noarch.rpm{% endif %} state=present
+#   when: not es_use_repository
+#   register: elasticsearch_install_from_package
