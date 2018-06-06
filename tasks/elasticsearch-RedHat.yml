@@ -5,7 +5,7 @@
 
 - name: RedHat - add Elasticsearch repo
   template: src=elasticsearch.repo dest=/etc/yum.repos.d/elasticsearch-{{ es_major_version }}.repo
-  when: es_use_repository and deployment_environment_id not in ['staging', 'production']
+  when: es_use_repository and deployment_environment_id == 'local_development'
 
 - name: RedHat - include versionlock
   include: elasticsearch-RedHat-version-lock.yml
