@@ -6,12 +6,27 @@ provisioner:
   name: ansible_playbook
   hosts: localhost
   roles_path: ../
-  require_ansible_repo: true
-  ansible_verbose: true
-  ansible_version: 2.2.0
+  require_ansible_repo: false
+  require_ansible_omnibus: false
+  require_ansible_source: false
+  require_pip: true
+  ansible_version: 2.4.3.0
   http_proxy: <%= ENV['HTTP_PROXY'] %>
   https_proxy: <%= ENV['HTTPS_PROXY'] %>
   no_proxy: localhost,127.0.0.1
+  ignore_extensions_from_root: [".git",".idea",".kitchen.yml"]
+  ignore_paths_from_root: [".git",".idea",".kitchen"]
+  <% if ENV['VERSION'] %>
+  attributes:
+    extra_vars:
+      es_major_version: "<%= ENV['VERSION'] %>"
+      <% if ENV['VERSION'] == '5.x' %>
+      es_version: '5.6.9'
+      <% end %>
+  <% end %>
+
+transport:
+  max_ssh_sessions: 6
 
 platforms:
   - name: ubuntu-14.04
@@ -22,8 +37,11 @@ platforms:
         - apt-get update && apt-get install -y software-properties-common &&  add-apt-repository -y ppa:ansible/ansible
         - apt-get update && apt-get -y -q install python-apt python-pycurl python-pip
         - pip install jmespath
+        - pip uninstall -y ansible
       use_sudo: false
-      volume: <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+      volume: 
+        - <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+        - /etc/elasticsearch
   - name: ubuntu-16.04
     driver_config:
       image: dliappis/ubuntu-devopsci:16.04
@@ -33,8 +51,11 @@ platforms:
         - apt-get install -y -q net-tools
         - apt-get update && apt-get -y -q install python-apt python-pycurl python-pip
         - pip install jmespath
+        - pip uninstall -y ansible
       use_sudo: false
-      volume: <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+      volume: 
+        - <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+        - /etc/elasticsearch
       run_command: "/sbin/init"
   - name: debian-8
     driver_config:
@@ -43,12 +64,14 @@ platforms:
       provision_command:
         - apt-get update && apt-get -y install python python-dev python-pip build-essential libyaml-dev python-yaml curl wget
         - apt-get install -y -q net-tools
-        - apt-get install -y ansible
         - sed -ri 's/^#?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
         - sed -ri 's/^#?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
         - sed -ri 's/^#?UsePAM .*/UsePAM no/' /etc/ssh/sshd_config
         - pip install jmespath
-      volume: <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+        - pip uninstall -y ansible
+      volume: 
+        - <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+        - /etc/elasticsearch
       use_sudo: false
       run_command: "/sbin/init"
   - name: centos-7
@@ -60,38 +83,53 @@ platforms:
         - sed -ri 's/^#?UsePAM .*/UsePAM no/' /etc/ssh/sshd_config
         - rm /etc/yum.repos.d/epel*repo /etc/yum.repos.d/puppetlabs-pc1.repo
         - yum -y install initscripts
+        - yum -y remove ansible
         - yum clean all
         - pip install jmespath
-      volume: <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+      volume: 
+        - <%=ENV['ES_XPACK_LICENSE_FILE']%>:/tmp/license.json
+        - /etc/elasticsearch
       run_command: "/usr/sbin/init"
       privileged: true
       use_sudo: false
 
 suites:
-  - name: standard-5x
+  - name: standard
     provisioner:
       idempotency_test: true
       playbook: test/integration/standard.yml
     run_list:
     attributes:
-  - name: package-5x
+  - name: package
     run_list:
     attributes:
     provisioner:
       playbook: test/integration/package.yml
-  - name: config-5x
+  - name: config
     run_list:
     attributes:
     provisioner:
       playbook: test/integration/config.yml
-  - name: multi-5x
+  - name: multi
     run_list:
     attributes:
     provisioner:
       playbook: test/integration/multi.yml
       idempotency_test: true
-  - name: xpack-5x
+  - name: xpack
     run_list:
     attributes:
     provisioner:
       playbook: test/integration/xpack.yml
+  - name: xpack-standard
+    run_list:
+    attributes:
+    provisioner:
+      playbook: test/integration/xpack-standard.yml
+      idempotency_test: true
+  - name: issue-test
+    run_list:
+    attributes:
+    provisioner:
+      playbook: test/integration/issue-test.yml
+      idempotency_test: false
