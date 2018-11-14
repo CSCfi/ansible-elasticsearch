@@ -13,6 +13,12 @@
   set_fact: list_command="| grep -vE 'x-pack'"
   when: not es_plugins_reinstall
 
+- name: remove x-pack plugin directory when it isn't a plugin
+  file:
+    dest: "{{ es_home }}/plugins/x-pack"
+    state: "absent"
+  when: es_open_xpack
+
 #List currently installed plugins. We have to list the directories as the list commmand fails if the ES version is different than the plugin version.
 - name: Check installed elasticsearch plugins
   become: yes
@@ -24,6 +30,7 @@
     CONF_DIR: "{{ conf_dir }}"
     ES_PATH_CONF: "{{ conf_dir }}"
     ES_INCLUDE: "{{ instance_default_file }}"
+  check_mode: no
 
 #if es_plugins_reinstall is set to true we remove ALL plugins
 - name: set fact plugins_to_remove to install_plugins.stdout_lines
@@ -49,7 +56,6 @@
 - name: Remove elasticsearch plugins
   become: yes
   command: "{{es_home}}/bin/elasticsearch-plugin remove {{item}} --silent"
-  ignore_errors: yes
   with_items: "{{ plugins_to_remove | default([]) }}"
   notify: restart elasticsearch
   register: plugin_removed
@@ -60,9 +66,8 @@
 
 - name: Install elasticsearch plugins
   become: yes
-  command: "{{es_home}}/bin/elasticsearch-plugin install {{ item.plugin }} --batch --silent"
+  command: "{{es_home}}/bin/elasticsearch-plugin install {{ item.url | default(item.plugin) }} --batch --silent"
   register: plugin_installed
-  failed_when: "'ERROR' in plugin_installed.stdout"
   changed_when: plugin_installed.rc == 0
   with_items: "{{ es_plugins }}"
   when: item.plugin in plugins_to_install
