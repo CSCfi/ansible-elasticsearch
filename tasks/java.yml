@@ -9,7 +9,7 @@
 
 - name: RedHat - Ensure Java is installed
   become: yes
-  yum: name={{ java }} state={{java_state}}
+  shell: "yum -y install {{ java }} warn=false"
   when: ansible_os_family == 'RedHat'
 
 - name: Get the installed java path

@@ -8,7 +8,7 @@
 
 - name: Ensure libselinux-python on CentOS 6.x
   become: yes
-  yum: name=libselinux-python state=present update_cache=yes
+  shell: yum -y install libselinux-python warn=false
   when: ( ansible_distribution == "CentOS" ) and ( ansible_distribution_major_version == "6" )
 
 - name: RedHat - add Elasticsearch repo
@@ -22,18 +22,12 @@
 
 - name: RedHat - Remove non oss package if the old elasticsearch package is installed
   become: yes
-  yum:
-    name: 'elasticsearch'
-    state: 'absent'
+  shell: yum -y remove elasticsearch warn=false
   when: es_package_name == 'elasticsearch-oss'
 
 - name: RedHat - Install Elasticsearch
   become: yes
-  yum:
-    name: '{{ es_package_name }}{% if es_version is defined and es_version != ""  %}-{{ es_version }}{% endif %}'
-    state: present
-    update_cache: yes
-    allow_downgrade: '{{ allow_downgrade }}'
+  shell: 'yum -y install {{ es_package_name }}{% if es_version is defined and es_version != ""  %}-{{ es_version }}{% endif %} warn=false'
   when: es_use_repository
   register: redhat_elasticsearch_install_from_repo
   notify: restart elasticsearch
@@ -45,7 +39,7 @@
 
 - name: RedHat - Install Elasticsearch from url
   become: yes
-  yum: name={% if es_custom_package_url is defined %}{{ es_custom_package_url }}{% else %}{{ es_package_url }}-{{ es_version }}.noarch.rpm{% endif %} state=present
+  shell: 'yum -y install {% if es_custom_package_url is defined %}{{ es_custom_package_url }}{% else %}{{ es_package_url }}-{{ es_version }}.noarch.rpm{% endif %} warn=false'
   when: not es_use_repository
   register: elasticsearch_install_from_package
   notify: restart elasticsearch
