@@ -37,9 +37,16 @@
   environment:
     ES_PATH_CONF: "/etc/elasticsearch"
 
+- name: RedHat - Check if elasticsearch is installed
+  shell: "yum info elasticsearch-{{ es_version }} warn=false"
+  register: es_info
+  ignore_errors: true
+
 - name: RedHat - Install Elasticsearch from url
   become: yes
   shell: 'yum -y install {% if es_custom_package_url is defined %}{{ es_custom_package_url }}{% else %}{{ es_package_url }}-{{ es_version }}.noarch.rpm{% endif %} warn=false'
-  when: not es_use_repository
+  when:
+    - not es_use_repository
+    - es_info.rc > 0
   register: elasticsearch_install_from_package
   notify: restart elasticsearch
