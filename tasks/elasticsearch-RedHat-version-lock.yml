@@ -1,10 +1,7 @@
 ---
 - name: RedHat - install yum-version-lock
   become: yes
-  yum:
-    name: yum-plugin-versionlock
-    state: present
-    update_cache: yes
+  shell: yum install -y yum-plugin-versionlock warn=false
 
 - name: RedHat - check if requested elasticsearch version lock exists
   become: yes
