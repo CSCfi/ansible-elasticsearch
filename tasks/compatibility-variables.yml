@@ -36,3 +36,17 @@
   set_fact:
     es_api_scheme: "https"
   when: es_enable_http_ssl | bool
+
+- name: Detect major version changes
+  block:
+    - name: get current info
+      uri:
+        url: "{{ es_api_uri }}"
+        method: GET
+        body_format: json
+        return_content: yes
+      register: es_info
+      failed_when: false
+    - name: set major_version_changed
+      set_fact: 
+        es_major_version_changed: "{{ es_info.json.version.number.split('.')[0] != es_major_version.split('.')[0] if es_info.status > 0 else false }}"

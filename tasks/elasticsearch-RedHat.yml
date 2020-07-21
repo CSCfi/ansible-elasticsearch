@@ -28,6 +28,11 @@
 - name: RedHat - include versionlock
   include: elasticsearch-RedHat-version-lock.yml
 
+- name: RedHat - Remove elasticsearch if major version changes
+  become: yes
+  shell: 'yum remove -y {{ es_package_name }} warn=false'
+  when: es_major_version_changed
+
 - name: RedHat - Remove the other elasticsearch package if switching between OSS and standard
   become: yes
   shell: 'yum remove -y {{ es_other_package_name }} warn=false'

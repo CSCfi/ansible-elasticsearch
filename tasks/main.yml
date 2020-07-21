@@ -21,6 +21,15 @@
   tags:
       - always
 
+- name: delete old indices if changing major version
+  uri:
+    url: "{{ es_api_uri }}/*"
+    method: DELETE
+    status_code:
+      - 200
+      - 404
+  when: es_major_version_changed
+
 - name: use snapshot release
   include: snapshot-release.yml
   when: es_use_snapshot_release
