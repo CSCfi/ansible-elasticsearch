@@ -36,6 +36,14 @@
     file: 
       path: /etc/elasticsearch
       state: absent
+  - name: delete old configurations
+    file: 
+      path: /var/lib/elasticsearch
+      state: absent
+  - name: delete old configurations
+    file: 
+      path: /usr/share/elasticsearch
+      state: absent
   become: yes
   when: es_major_version_changed
 
