@@ -30,20 +30,39 @@
 
 - name: RedHat - Remove elasticsearch if major version changes
   block:
+    # This grep probably works only for version 5.x
+  - name: get actual service filename
+    shell: 'ls /usr/lib/systemd/system | grep "node[0-9]_elasticsearch" warn=false'
+    register: service_file
+
+  - name: stop service
+    systemd:
+      name: '{{ service_file.stdout }}'
+      state: stopped
+    when: service_file.stdout_lines|length > 0
+
   - name: remove package
     shell: 'yum remove -y {{ es_package_name }} warn=false'
+
   - name: delete old configurations
-    file: 
-      path: /etc/elasticsearch
+    file:
+      path: '{{ item }}'
       state: absent
-  - name: delete old configurations
-    file: 
-      path: /var/lib/elasticsearch
+    with_items:
+      - /etc/elasticsearch
+      - /var/lib/elasticsearch
+      - /usr/share/elasticsearch
+
+  - name: get service filenames
+    shell: ls /usr/lib/systemd/system | grep elasticsearch warn=false
+    register: service_files
+
+  - name: delete old service files
+    file:
+      path: /usr/lib/systemd/system/{{ item }}
       state: absent
-  - name: delete old configurations
-    file: 
-      path: /usr/share/elasticsearch
-      state: absent
+    with_items: '{{ service_files.stdout_lines }}'
+
   become: yes
   when: es_major_version_changed
 
